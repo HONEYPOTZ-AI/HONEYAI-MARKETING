@@ -7,7 +7,7 @@ COPY shared/ ./shared/
 COPY server/ ./server/
 COPY client/ ./client/
 
-# Install all dependencies
+# Install all dependencies (includes prisma v5 in server workspace)
 RUN npm ci --workspace=server --workspace=shared
 
 # Build server TypeScript
@@ -23,7 +23,7 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Install production dependencies at root level for workspaces
+# Copy everything including node_modules
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/package-lock.json ./
@@ -31,6 +31,7 @@ COPY --from=builder /app/package-lock.json ./
 # Copy built artifacts
 COPY --from=builder /app/server/dist ./server/dist
 COPY --from=builder /app/server/package.json ./server/
+COPY --from=builder /app/server/node_modules ./server/node_modules
 COPY --from=builder /app/server/prisma ./server/prisma
 COPY --from=builder /app/shared ./shared
 COPY --from=builder /app/client/.next ./client/.next
@@ -42,4 +43,5 @@ ENV CLIENT_URL=http://localhost:3000
 
 EXPOSE 3001
 
-CMD cd /app/server && npx prisma migrate deploy && node dist/index.js
+# Run migrations from server/ where prisma CLI is installed, then start
+CMD cd /app/server && npx prisma migrate deploy && cd /app && node server/dist/index.js
