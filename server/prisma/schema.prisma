@@ -217,6 +217,7 @@ model SmsOptIn {
 
   @@index([contactId])
   @@index([phoneNumber])
+  @@unique([contactId, phoneNumber])
 }
 
 model SmsCampaign {
