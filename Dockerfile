@@ -23,12 +23,9 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Copy root node_modules
+# Copy root node_modules (workspace deps hoisted)
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
-
-# Copy server's own node_modules (for prisma and server-specific deps)
-COPY --from=builder /app/server/node_modules ./server/node_modules
 
 # Copy built server artifacts
 COPY --from=builder /app/server/dist ./server/dist
@@ -40,7 +37,7 @@ COPY --from=builder /app/shared ./shared
 COPY --from=builder /app/client/.next ./client/.next
 COPY --from=builder /app/client/package.json ./client/
 
-# Add prisma CLI globally for migrations
+# Install prisma CLI globally for migrations
 RUN npm install -g prisma@5
 
 ENV NODE_ENV=production
