@@ -190,6 +190,7 @@ model EmailSendResult {
   campaignId  String
   userId      String
   recipientId String
+  templateId  String?
   status      String    @default("queued")
   sentAt      DateTime?
   deliveredAt DateTime?
