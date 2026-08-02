@@ -76,17 +76,21 @@ model MagicLink {
 model OAuthConnection {
   id          String   @id @default(uuid())
   userId      String
+  teamId      String?
   provider    String   // google, linkedin
   providerId  String
+  isActive    Boolean  @default(true)
   accessToken String
   refreshToken String?
   tokenExpiry DateTime?
   scope       String?
+  profileData Json?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@unique([provider, providerId])
   @@index([userId])
+  @@index([teamId])
 }
 
 // ── Campaigns ────────────────────────────────────────────────────────────
