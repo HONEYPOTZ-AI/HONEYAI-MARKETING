@@ -89,7 +89,7 @@ billingRouter.post('/checkout', async (req: AuthRequest, res: Response) => {
     await prisma.subscription.upsert({
       where: { id: subscription?.id || 'none' },
       update: { stripeCustomerId: customerId, planId: planId },
-      create: { teamId: req.teamId!, stripeCustomerId: customerId, tier: 'free', status: 'inactive', planId: planId },
+      create: { teamId: req.teamId!, stripeCustomerId: customerId, tier: 'free', status: 'inactive', planId: planId, currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
     });
 
     res.json({ success: true, data: { url: session.url } });

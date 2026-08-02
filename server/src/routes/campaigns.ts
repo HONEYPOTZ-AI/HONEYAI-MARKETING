@@ -29,7 +29,7 @@ campaignRouter.post('/', async (req: AuthRequest, res: Response) => {
   });
   const data = schema.parse(req.body);
   const campaign = await prisma.campaign.create({
-    data: { ...data, teamId: req.teamId!, createdBy: req.userId! },
+    data: { ...data, channelConfig: data.channelConfig as any, teamId: req.teamId!, createdBy: req.userId! },
   });
   res.status(201).json({ success: true, data: campaign });
 });
