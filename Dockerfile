@@ -7,10 +7,10 @@ COPY shared/ ./shared/
 COPY server/ ./server/
 COPY client/ ./client/
 
-# Install root + workspace deps
+# Install all workspace deps
 RUN npm ci
 
-# Build server TypeScript (server workspace deps installed via npm ci)
+# Build server TypeScript
 WORKDIR /app/server
 RUN npm run build
 
@@ -23,8 +23,10 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Copy root node_modules (workspace deps hoisted)
+# Copy root node_modules (workspace deps for shared etc)
 COPY --from=builder /app/node_modules ./node_modules
+# Copy server's own node_modules (prisma lives here)
+COPY --from=builder /app/server/node_modules ./server/node_modules
 COPY --from=builder /app/package.json ./
 
 # Copy built server
@@ -43,5 +45,4 @@ ENV CLIENT_URL=http://localhost:3000
 
 EXPOSE 3001
 
-# Prisma CLI is hoisted to root node_modules/.bin by npm ci (workspaces)
-CMD cd /app/server && ../node_modules/.bin/prisma migrate deploy && cd /app && node server/dist/index.js
+CMD cd /app/server && ./node_modules/.bin/prisma migrate deploy && cd /app && node server/dist/index.js
