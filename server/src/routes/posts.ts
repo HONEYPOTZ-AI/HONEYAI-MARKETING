@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { AuthRequest } from '../middleware/auth';
+import { generateText, isConfigured } from '../services/ai';
 
 const prisma = new PrismaClient();
 export const postRouter = Router();
@@ -58,9 +59,20 @@ postRouter.post('/generate', async (req: AuthRequest, res: Response) => {
     length: z.enum(['short', 'medium', 'long']).optional(),
   });
   const data = schema.parse(req.body);
-  const prompt = `Write a ${data.length || 'medium'} LinkedIn post about ${data.topic}. Tone: ${data.tone || 'professional'}. Include hashtags, make it engaging.`;
-  // Stub — in production calls OpenAI
-  const content = `[AI-generated post about ${data.topic} — integrate OpenAI for real output]`;
 
-  res.json({ success: true, data: { content, model: 'openai/gpt-4', tokensUsed: 0 } });
+  if (!isConfigured()) {
+    return res.json({ success: true, data: { content: `[Preview] AI-generated ${data.platform} post about "${data.topic}" — configure Azure OpenAI for real content.`, model: 'preview', tokensUsed: 0 } });
+  }
+
+  try {
+    const lengthGuide = data.length === 'short' ? '150-300 characters' : data.length === 'long' ? '1000-2000 characters' : '500-1000 characters';
+    const instructions = `You are an expert social media copywriter. Write an engaging ${data.platform} post about the given topic. Tone: ${data.tone || 'professional'}. Length: ${lengthGuide}. Make it engaging, include relevant hashtags at the end (3-5 max), use emojis sparingly and only if appropriate for the tone. Format as plain text ready to post.`;
+    const prompt = `Write a ${data.platform} post about: ${data.topic}.`;
+
+    const result = await generateText({ prompt, instructions, maxTokens: 800 });
+    res.json({ success: true, data: { content: result.text, model: result.model, tokensUsed: result.tokensUsed } });
+  } catch (err: any) {
+    console.error('Post generation error:', err.message);
+    res.status(502).json({ success: false, error: 'AI generation failed' });
+  }
 });

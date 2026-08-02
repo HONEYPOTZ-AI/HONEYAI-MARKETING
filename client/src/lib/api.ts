@@ -91,3 +91,29 @@ export async function getSubscription() {
 export async function getPlans() {
   return api('/api/billing/plans');
 }
+
+// Convenience HTTP methods
+export const http = {
+  get: <T = unknown>(endpoint: string) => {
+    const path = endpoint.startsWith('/api') ? endpoint : `/api${endpoint}`;
+    return api<T>(path);
+  },
+  post: <T = unknown>(endpoint: string, body: unknown) => {
+    const path = endpoint.startsWith('/api') ? endpoint : `/api${endpoint}`;
+    return api<T>(path, { method: 'POST', body });
+  },
+  patch: <T = unknown>(endpoint: string, body: unknown) => {
+    const path = endpoint.startsWith('/api') ? endpoint : `/api${endpoint}`;
+    return api<T>(path, { method: 'PATCH', body });
+  },
+  delete: <T = unknown>(endpoint: string) => {
+    const path = endpoint.startsWith('/api') ? endpoint : `/api${endpoint}`;
+    return api<T>(path, { method: 'DELETE' });
+  },
+};
+
+// Alias api as the default methods for pages that import { api }
+(api as any).get = http.get;
+(api as any).post = http.post;
+(api as any).patch = http.patch;
+(api as any).delete = http.delete;

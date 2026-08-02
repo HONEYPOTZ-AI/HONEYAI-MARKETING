@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { AuthRequest } from '../middleware/auth';
+import { sendEmail, isConfigured as isEmailConfigured } from '../services/email';
 
 const prisma = new PrismaClient();
 export const emailRouter = Router();
@@ -41,4 +42,45 @@ emailRouter.get('/results', async (req: AuthRequest, res: Response) => {
     prisma.emailSendResult.count({ where }),
   ]);
   res.json({ success: true, data, pagination: { page: Number(page), limit: Number(limit), total, totalPages: Math.ceil(total / Number(limit)) } });
+});
+
+// ── Send Email ────────────────────────────────────────────────────────────
+emailRouter.post('/send', async (req: AuthRequest, res: Response) => {
+  const schema = z.object({
+    to: z.string().email(),
+    subject: z.string().min(1),
+    body: z.string().min(1),
+    templateId: z.string().optional(),
+    campaignId: z.string().optional(),
+    contactId: z.string().optional(),
+  });
+  const data = schema.parse(req.body);
+
+  if (!isEmailConfigured()) {
+    return res.status(500).json({ success: false, error: 'SendGrid not configured' });
+  }
+
+  try {
+    const result = await sendEmail({ to: data.to, subject: data.subject, html: data.body });
+
+    // Log the send result
+    await prisma.emailSendResult.create({
+      data: {
+        templateId: data.templateId || '',
+        campaignId: data.campaignId,
+        contactId: data.contactId,
+        toEmail: data.to,
+        subject: data.subject,
+        messageId: result.messageId,
+        status: 'sent',
+        sentAt: new Date(),
+        userId: req.userId!,
+      },
+    });
+
+    res.json({ success: true, data: { messageId: result.messageId, status: 'sent' } });
+  } catch (err: any) {
+    console.error('Email send error:', err.message);
+    res.status(502).json({ success: false, error: 'Email send failed' });
+  }
 });

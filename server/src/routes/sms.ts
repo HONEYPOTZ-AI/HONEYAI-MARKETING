@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { AuthRequest } from '../middleware/auth';
+import { sendSms, isConfigured as isSmsConfigured } from '../services/sms';
 
 const prisma = new PrismaClient();
 export const smsRouter = Router();
@@ -38,4 +39,46 @@ smsRouter.post('/opt-out', async (req: AuthRequest, res: Response) => {
   await prisma.smsOptIn.updateMany({ where: { contactId, isActive: true }, data: { isActive: false, optedOutAt: new Date() } });
   await prisma.contact.update({ where: { id: contactId }, data: { smsOptIn: false } });
   res.json({ success: true, message: 'Opted out' });
+});
+
+// ── Send SMS ──────────────────────────────────────────────────────────────
+smsRouter.post('/send', async (req: AuthRequest, res: Response) => {
+  const schema = z.object({
+    to: z.string().min(7),
+    body: z.string().min(1).max(1600),
+    contactId: z.string().optional(),
+    campaignId: z.string().optional(),
+  });
+  const data = schema.parse(req.body);
+
+  if (!isSmsConfigured()) {
+    return res.status(500).json({ success: false, error: 'Twilio not configured' });
+  }
+
+  // Check for opt-out
+  const existing = await prisma.smsOptIn.findFirst({
+    where: { phoneNumber: data.to, isActive: true },
+  });
+
+  if (existing && !existing.isActive) {
+    return res.status(400).json({ success: false, error: 'Contact has opted out of SMS' });
+  }
+
+  try {
+    const result = await sendSms(data.to, data.body);
+
+    // Log the send
+    if (data.contactId) {
+      await prisma.smsOptIn.upsert({
+        where: { contactId_phoneNumber: { contactId: data.contactId, phoneNumber: data.to } },
+        update: { lastSentAt: new Date() },
+        create: { contactId: data.contactId, phoneNumber: data.to, source: 'api', lastSentAt: new Date() },
+      });
+    }
+
+    res.json({ success: true, data: { sid: result.sid, status: result.status } });
+  } catch (err: any) {
+    console.error('SMS send error:', err.message);
+    res.status(502).json({ success: false, error: 'SMS send failed' });
+  }
 });

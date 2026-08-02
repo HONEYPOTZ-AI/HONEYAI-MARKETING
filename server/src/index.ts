@@ -19,6 +19,7 @@ import { analyticsRouter } from './routes/analytics';
 import { billingRouter } from './routes/billing';
 import { healthRouter } from './routes/health';
 import { webhookRouter } from './routes/webhooks';
+import { linkedinRouter } from './routes/linkedin';
 
 import { errorHandler } from './middleware/errorHandler';
 import { authenticate } from './middleware/auth';
@@ -52,6 +53,9 @@ app.use('/api', globalLimiter);
 app.use('/api/health', healthRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/webhooks', webhookRouter);
+
+// ── Semi-public routes (some endpoints need auth, some don't) ─────────────
+app.use('/api/linkedin', linkedinRouter);
 
 // ── Protected Routes (auth required) ──────────────────────────────────────
 app.use('/api/users', authenticate, userRouter);
