@@ -21,6 +21,9 @@ RUN npm ci && npm run build
 # ── Production Stage ────────────────────────────────────────────────────────
 FROM node:20-alpine AS runner
 
+# Install OpenSSL (required by Prisma engine)
+RUN apk add --no-cache openssl
+
 WORKDIR /app
 
 # Copy root node_modules (workspace deps hoisted)
