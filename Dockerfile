@@ -10,11 +10,14 @@ COPY client/ ./client/
 # Install all workspace deps (this hoists everything to root node_modules)
 RUN npm ci
 
-# Build server TypeScript
+# Generate Prisma client (before build, so build can use generated types)
 WORKDIR /app/server
+RUN npx prisma generate
+
+# Build server TypeScript
 RUN npm run build
 
-# Build client (no need for second npm ci, all deps are already hoisted)
+# Build client
 WORKDIR /app/client
 RUN npm run build
 
@@ -25,7 +28,7 @@ RUN apk add --no-cache openssl
 
 WORKDIR /app
 
-# Copy root node_modules (all workspace deps hoisted here)
+# Copy root node_modules (all workspace deps hoisted here, including generated prisma client)
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
 
