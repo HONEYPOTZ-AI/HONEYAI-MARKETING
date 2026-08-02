@@ -65,7 +65,7 @@ linkedinRouter.get('/callback', async (req: Request, res: Response) => {
             await prisma.oAuthConnection.upsert({
               where: { provider_providerId: { provider: 'linkedin', providerId: profile.sub } },
               update: { accessToken: tokens.access_token, refreshToken: tokens.refresh_token || '', tokenExpiry: new Date(Date.now() + (tokens.expires_in || 5184000) * 1000), profileData: profile },
-              create: { teamId: decoded.teamId, provider: 'linkedin', providerId: profile.sub, accessToken: tokens.access_token, refreshToken: tokens.refresh_token || '', tokenExpiry: new Date(Date.now() + (tokens.expires_in || 5184000) * 1000), profileData: profile },
+              create: { userId: decoded.userId || 'unknown', teamId: decoded.teamId, provider: 'linkedin', providerId: profile.sub, accessToken: tokens.access_token, refreshToken: tokens.refresh_token || '', tokenExpiry: new Date(Date.now() + (tokens.expires_in || 5184000) * 1000), profileData: profile },
             });
           }
         } catch (e) {
