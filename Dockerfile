@@ -7,26 +7,25 @@ COPY shared/ ./shared/
 COPY server/ ./server/
 COPY client/ ./client/
 
-# Install all workspace deps
+# Install all workspace deps (this hoists everything to root node_modules)
 RUN npm ci
 
 # Build server TypeScript
 WORKDIR /app/server
 RUN npm run build
 
-# Build client
+# Build client (no need for second npm ci, all deps are already hoisted)
 WORKDIR /app/client
-RUN npm ci && npm run build
+RUN npm run build
 
 # ── Production Stage ────────────────────────────────────────────────────────
 FROM node:20-alpine AS runner
 
-# Install OpenSSL (required by Prisma engine)
 RUN apk add --no-cache openssl
 
 WORKDIR /app
 
-# Copy root node_modules (workspace deps hoisted)
+# Copy root node_modules (all workspace deps hoisted here)
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
 
