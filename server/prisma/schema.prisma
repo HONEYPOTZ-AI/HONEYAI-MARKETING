@@ -229,6 +229,7 @@ model SmsCampaign {
   id              String   @id @default(uuid())
   campaignId      String
   message         String
+  status          String    @default("draft")
   recipientCount  Int      @default(0)
   sentCount       Int      @default(0)
   deliveredCount  Int      @default(0)
@@ -406,9 +407,11 @@ model Subscription {
   trialEndsAt          DateTime?
   stripeSubscriptionId String?
   stripeCustomerId     String?
+  createdAt   DateTime @default(now())
 
   team                 Team     @relation(fields: [teamId], references: [id])
 
   @@index([teamId])
   @@index([stripeCustomerId])
+  createdAt   DateTime @default(now())
 }

@@ -20,7 +20,7 @@ const PLAN_PRICES: Record<string, { month: string; year: string }> = {
 billingRouter.get('/subscription', async (req: AuthRequest, res: Response) => {
   const subscription = await prisma.subscription.findFirst({
     where: { teamId: req.teamId },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { currentPeriodStart: 'desc' },
   });
   res.json({ success: true, data: subscription });
 });
@@ -45,7 +45,7 @@ billingRouter.get('/invoices', async (req: AuthRequest, res: Response) => {
   try {
     const subscription = await prisma.subscription.findFirst({
       where: { teamId: req.teamId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { currentPeriodStart: 'desc' },
     });
     if (!subscription?.stripeCustomerId) return res.json({ success: true, data: [] });
     const invoices = await stripe.invoices.list({ customer: subscription.stripeCustomerId, limit: 12 });
@@ -65,7 +65,7 @@ billingRouter.post('/checkout', async (req: AuthRequest, res: Response) => {
   try {
     let subscription = await prisma.subscription.findFirst({
       where: { teamId: req.teamId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { currentPeriodStart: 'desc' },
     });
 
     let customerId = subscription?.stripeCustomerId;
@@ -88,8 +88,8 @@ billingRouter.post('/checkout', async (req: AuthRequest, res: Response) => {
 
     await prisma.subscription.upsert({
       where: { id: subscription?.id || 'none' },
-      update: { stripeCustomerId: customerId, pendingPlan: planId },
-      create: { teamId: req.teamId!, stripeCustomerId: customerId, tier: 'free', status: 'inactive', pendingPlan: planId },
+      update: { stripeCustomerId: customerId, planId: planId },
+      create: { teamId: req.teamId!, stripeCustomerId: customerId, tier: 'free', status: 'inactive', planId: planId },
     });
 
     res.json({ success: true, data: { url: session.url } });
@@ -104,7 +104,7 @@ billingRouter.post('/portal', async (req: AuthRequest, res: Response) => {
   try {
     const subscription = await prisma.subscription.findFirst({
       where: { teamId: req.teamId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { currentPeriodStart: 'desc' },
     });
     if (!subscription?.stripeCustomerId) return res.status(400).json({ error: 'No subscription' });
     const portal = await stripe.billingPortal.sessions.create({

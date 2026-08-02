@@ -24,7 +24,7 @@ campaignRouter.post('/', async (req: AuthRequest, res: Response) => {
   const schema = z.object({
     name: z.string().min(2),
     type: z.enum(['email', 'sms', 'linkedin', 'multi']),
-    scheduleAt: z.string().datetime().optional(),
+    scheduledAt: z.string().datetime().optional(),
     channelConfig: z.record(z.unknown()).optional(),
   });
   const data = schema.parse(req.body);
