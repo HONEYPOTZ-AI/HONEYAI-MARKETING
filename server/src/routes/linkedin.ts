@@ -63,9 +63,9 @@ linkedinRouter.get('/callback', async (req: Request, res: Response) => {
           const decoded = JSON.parse(Buffer.from(state as string, 'base64').toString());
           if (decoded.teamId) {
             await prisma.oAuthConnection.upsert({
-              where: { platform_providerAccountId: { platform: 'linkedin', providerAccountId: profile.sub } },
+              where: { provider_providerId: { provider: 'linkedin', providerId: profile.sub } },
               update: { accessToken: tokens.access_token, refreshToken: tokens.refresh_token || '', tokenExpiry: new Date(Date.now() + (tokens.expires_in || 5184000) * 1000), profileData: profile },
-              create: { teamId: decoded.teamId, platform: 'linkedin', providerAccountId: profile.sub, accessToken: tokens.access_token, refreshToken: tokens.refresh_token || '', tokenExpiry: new Date(Date.now() + (tokens.expires_in || 5184000) * 1000), profileData: profile },
+              create: { teamId: decoded.teamId, provider: 'linkedin', providerId: profile.sub, accessToken: tokens.access_token, refreshToken: tokens.refresh_token || '', tokenExpiry: new Date(Date.now() + (tokens.expires_in || 5184000) * 1000), profileData: profile },
             });
           }
         } catch (e) {
@@ -84,7 +84,7 @@ linkedinRouter.get('/callback', async (req: Request, res: Response) => {
 // GET /api/auth/linkedin/status — check connection status
 linkedinRouter.get('/status', async (req: AuthRequest, res: Response) => {
   const connection = await prisma.oAuthConnection.findFirst({
-    where: { teamId: req.teamId, platform: 'linkedin' },
+    where: { teamId: req.teamId, provider: 'linkedin' },
     select: { id: true, isActive: true, tokenExpiry: true, profileData: true, createdAt: true },
   });
   res.json({ success: true, data: connection });
@@ -92,7 +92,7 @@ linkedinRouter.get('/status', async (req: AuthRequest, res: Response) => {
 
 // POST /api/auth/linkedin/disconnect
 linkedinRouter.post('/disconnect', async (req: AuthRequest, res: Response) => {
-  await prisma.oAuthConnection.deleteMany({ where: { teamId: req.teamId, platform: 'linkedin' } });
+  await prisma.oAuthConnection.deleteMany({ where: { teamId: req.teamId, provider: 'linkedin' } });
   res.json({ success: true, message: 'Disconnected' });
 });
 
@@ -100,7 +100,7 @@ linkedinRouter.post('/disconnect', async (req: AuthRequest, res: Response) => {
 linkedinRouter.post('/post', async (req: AuthRequest, res: Response) => {
   try {
     const connection = await prisma.oAuthConnection.findFirst({
-      where: { teamId: req.teamId, platform: 'linkedin', isActive: true },
+      where: { teamId: req.teamId, provider: 'linkedin', isActive: true },
     });
 
     if (!connection) {
