@@ -26,7 +26,7 @@ export default function CrmPage() {
   const [title, setTitle] = useState('');
 
   const fetchContacts = async () => {
-    try { const res = await api.get('/crm/contacts'); setContacts(res.data.data); } catch {} finally { setLoading(false); }
+    try { const res = await api.get<{ success: boolean; data: Contact[] }>('/crm/contacts'); setContacts(res.data); } catch {} finally { setLoading(false); }
   };
 
   useEffect(() => { fetchContacts(); }, []);

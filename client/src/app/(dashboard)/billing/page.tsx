@@ -21,19 +21,35 @@ export default function BillingPage() {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [billingInterval, setBillingInterval] = useState<'month' | 'year'>('month');
+  const [checkingOut, setCheckingOut] = useState<string | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
 
   useEffect(() => {
     Promise.all([
-      api.get('/billing/plans'),
-      api.get('/billing/subscription'),
+      api.get<{ success: boolean; data: Plan[] }>('/billing/plans'),
+      api.get<{ success: boolean; data: Subscription | null }>('/billing/subscription'),
     ]).then(([plansRes, subRes]) => {
-      setPlans(plansRes.data.data);
-      setSubscription(subRes.data.data);
+      setPlans(plansRes.data);
+      setSubscription(subRes.data);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
 
-  if (loading) {
+  const handleCheckout = async (planId: string) => {
+    setCheckingOut(planId);
+    try {
+      const res = await api.post<{ success: boolean; data: { url: string } }>('/billing/checkout', { planId, interval: billingInterval });
+      window.location.href = res.data.url;
+    } catch (err: any) { alert(err.message); setCheckingOut(null); }
+  };
+
+  const handlePortal = async () => {
+    setPortalLoading(true);
+    try {
+      const res = await api.post<{ success: boolean; data: { url: string } }>('/billing/portal', {});
+      window.location.href = res.data.url;
+    } catch (err: any) { alert(err.message); setPortalLoading(false); }
+  };
     return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   }
 
@@ -49,6 +65,11 @@ export default function BillingPage() {
             ? `Current plan: ${currentTier?.charAt(0).toUpperCase() + currentTier?.slice(1)} — ${subscription.status === 'trialing' ? 'Trial ends ' + new Date(subscription.trialEndsAt!).toLocaleDateString() : 'Active until ' + new Date(subscription.currentPeriodEnd).toLocaleDateString()}`
             : 'Choose a plan to get started'}
         </p>
+        {subscription && (
+          <Button variant="outline" size="sm" className="mt-2" onClick={handlePortal} disabled={portalLoading}>
+            {portalLoading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Loading...</> : 'Manage Billing →'}
+          </Button>
+        )}
       </div>
 
       <div className="flex items-center gap-2 bg-card border border-border rounded-lg p-1 w-fit">
@@ -93,8 +114,10 @@ export default function BillingPage() {
                     </li>
                   ))}
                 </ul>
-                <Button className="w-full" variant={isCurrent ? 'outline' : 'default'} disabled={isCurrent}>
-                  {isCurrent ? 'Current Plan' : 'Upgrade'}
+                <Button className="w-full" variant={isCurrent ? 'outline' : 'default'}
+                  disabled={isCurrent || checkingOut === plan.id}
+                  onClick={() => handleCheckout(plan.id)}>
+                  {checkingOut === plan.id ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Redirecting...</> : isCurrent ? 'Current Plan' : 'Upgrade'}
                 </Button>
               </CardContent>
             </Card>

@@ -3,10 +3,11 @@ import { PrismaClient } from '@prisma/client';
 import Stripe from 'stripe';
 
 const prisma = new PrismaClient();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2023-10-16' });
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2025-06-30.acacia' as any });
 
 export const webhookRouter = Router();
 
+// ── Stripe webhook ──────────────────────────────────────────────────────────
 webhookRouter.post('/stripe', async (req: Request, res: Response) => {
   const sig = req.headers['stripe-signature'] as string;
   const secret = process.env.STRIPE_WEBHOOK_SECRET || '';
@@ -17,13 +18,27 @@ webhookRouter.post('/stripe', async (req: Request, res: Response) => {
   }
 
   try {
-    const event = stripe.webhooks.constructEvent(
-      JSON.stringify(req.body), sig, secret
-    );
-    // const rawBody = req.body; // use raw body parser for Stripe verification
+    // Use rawBody if available (set by express.raw middleware), fallback to JSON.stringify
+    const rawBody = (req as any).rawBody ? (req as any).rawBody.toString() : JSON.stringify(req.body);
+    const event = stripe.webhooks.constructEvent(rawBody, sig, secret);
 
     switch (event.type) {
-      case 'customer.subscription.created':
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const { teamId, planId } = session.metadata || {};
+        if (teamId && planId) {
+          await prisma.subscription.updateMany({
+            where: { teamId, pendingPlan: planId },
+            data: {
+              tier: planId,
+              status: 'active',
+              stripeSubscriptionId: session.subscription as string,
+              pendingPlan: null,
+            },
+          });
+        }
+        break;
+      }
       case 'customer.subscription.updated': {
         const sub = event.data.object as Stripe.Subscription;
         const teamId = sub.metadata?.teamId;
@@ -31,7 +46,7 @@ webhookRouter.post('/stripe', async (req: Request, res: Response) => {
           await prisma.subscription.updateMany({
             where: { teamId, stripeSubscriptionId: sub.id },
             data: {
-              status: sub.status === 'active' ? 'active' : 'past_due',
+              status: sub.status === 'active' ? 'active' : sub.status === 'past_due' ? 'past_due' : 'cancelled',
               currentPeriodStart: new Date(sub.current_period_start * 1000),
               currentPeriodEnd: new Date(sub.current_period_end * 1000),
             },
@@ -45,7 +60,7 @@ webhookRouter.post('/stripe', async (req: Request, res: Response) => {
         if (teamId) {
           await prisma.subscription.updateMany({
             where: { teamId, stripeSubscriptionId: sub.id },
-            data: { status: 'cancelled' },
+            data: { status: 'cancelled', tier: 'free' },
           });
         }
         break;
@@ -66,8 +81,8 @@ webhookRouter.post('/stripe', async (req: Request, res: Response) => {
   }
 });
 
+// ── Email events webhook (SendGrid / Resend) ────────────────────────────────
 webhookRouter.post('/email-events', async (req: Request, res: Response) => {
-  // SendGrid / Resend webhook handler
   const events = req.body;
   if (!Array.isArray(events)) {
     res.status(400).json({ error: 'Invalid events format' });

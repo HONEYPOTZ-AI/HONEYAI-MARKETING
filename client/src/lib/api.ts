@@ -12,10 +12,15 @@ export function setAccessToken(token: string | null) {
   accessToken = token;
 }
 
-export async function api<T = unknown>(endpoint: string, options: ApiOptions = {}): Promise<T> {
+// Base fetch function
+async function _fetch<T = unknown>(endpoint: string, options: ApiOptions = {}): Promise<T> {
   const { method = 'GET', body, headers = {} } = options;
-  
-  const res = await fetch(`${API_BASE}${endpoint}`, {
+
+  const path = endpoint.startsWith('http')
+    ? endpoint
+    : `${API_BASE}${endpoint.startsWith('/api') ? endpoint : '/api' + endpoint}`;
+
+  const res = await fetch(path, {
     method,
     headers: {
       'Content-Type': 'application/json',
@@ -34,6 +39,20 @@ export async function api<T = unknown>(endpoint: string, options: ApiOptions = {
   return data;
 }
 
+// Typed API helper with methods attached
+export const api: {
+  <T = unknown>(endpoint: string, options?: ApiOptions): Promise<T>;
+  get: <T = unknown>(endpoint: string) => Promise<T>;
+  post: <T = unknown>(endpoint: string, body: unknown) => Promise<T>;
+  patch: <T = unknown>(endpoint: string, body: unknown) => Promise<T>;
+  del: <T = unknown>(endpoint: string) => Promise<T>;
+} = Object.assign(_fetch, {
+  get: <T = unknown>(endpoint: string) => _fetch<T>(endpoint),
+  post: <T = unknown>(endpoint: string, body: unknown) => _fetch<T>(endpoint, { method: 'POST', body }),
+  patch: <T = unknown>(endpoint: string, body: unknown) => _fetch<T>(endpoint, { method: 'PATCH', body }),
+  del: <T = unknown>(endpoint: string) => _fetch<T>(endpoint, { method: 'DELETE' }),
+});
+
 // Auth
 export async function login(email: string, password: string) {
   return api('/api/auth/login', { method: 'POST', body: { email, password } });
@@ -45,11 +64,6 @@ export async function register(email: string, password: string, fullName: string
 
 export async function requestMagicLink(email: string) {
   return api('/api/auth/magic-link', { method: 'POST', body: { email } });
-}
-
-// Dashboard
-export async function getDashboardMetrics() {
-  return api('/api/analytics/dashboard');
 }
 
 // Posts
@@ -91,29 +105,3 @@ export async function getSubscription() {
 export async function getPlans() {
   return api('/api/billing/plans');
 }
-
-// Convenience HTTP methods
-export const http = {
-  get: <T = unknown>(endpoint: string) => {
-    const path = endpoint.startsWith('/api') ? endpoint : `/api${endpoint}`;
-    return api<T>(path);
-  },
-  post: <T = unknown>(endpoint: string, body: unknown) => {
-    const path = endpoint.startsWith('/api') ? endpoint : `/api${endpoint}`;
-    return api<T>(path, { method: 'POST', body });
-  },
-  patch: <T = unknown>(endpoint: string, body: unknown) => {
-    const path = endpoint.startsWith('/api') ? endpoint : `/api${endpoint}`;
-    return api<T>(path, { method: 'PATCH', body });
-  },
-  delete: <T = unknown>(endpoint: string) => {
-    const path = endpoint.startsWith('/api') ? endpoint : `/api${endpoint}`;
-    return api<T>(path, { method: 'DELETE' });
-  },
-};
-
-// Alias api as the default methods for pages that import { api }
-(api as any).get = http.get;
-(api as any).post = http.post;
-(api as any).patch = http.patch;
-(api as any).delete = http.delete;

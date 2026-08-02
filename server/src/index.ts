@@ -49,6 +49,17 @@ const globalLimiter = rateLimit({
 });
 app.use('/api', globalLimiter);
 
+// ── Raw body parser needed for Stripe webhook signature verification
+//    The /api/webhooks/stripe route needs the raw body
+app.use('/api/webhooks', express.raw({ type: 'application/json' }), (req, _res, next) => {
+  (req as any).rawBody = req.body;
+  // If body is a Buffer, parse it back to JSON for downstream
+  if (Buffer.isBuffer(req.body)) {
+    try { req.body = JSON.parse(req.body.toString()); } catch { req.body = {}; }
+  }
+  next();
+});
+
 // ── Public Routes (no auth required) ─────────────────────────────────────
 app.use('/api/health', healthRouter);
 app.use('/api/auth', authRouter);
