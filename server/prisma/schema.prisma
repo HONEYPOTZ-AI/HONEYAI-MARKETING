@@ -211,6 +211,7 @@ model SmsOptIn {
   isActive      Boolean   @default(true)
   optedInAt     DateTime  @default(now())
   optedOutAt    DateTime?
+  lastSentAt    DateTime?
 
   contact       Contact   @relation(fields: [contactId], references: [id])
 

@@ -24,7 +24,7 @@ userRouter.patch('/me', async (req: AuthRequest, res: Response) => {
 userRouter.get('/team', async (req: AuthRequest, res: Response) => {
   const team = await prisma.team.findUnique({
     where: { id: req.teamId },
-    include: { members: { select: { id: true, email: true, fullName: true, role: true, createdAt: true } }, subscriptions: { take: 1, orderBy: { createdAt: 'desc' } } },
+    include: { members: { select: { id: true, email: true, fullName: true, role: true, createdAt: true } }, subscriptions: { take: 1, orderBy: { currentPeriodStart: 'desc' } } },
   });
   res.json({ success: true, data: team });
 });
