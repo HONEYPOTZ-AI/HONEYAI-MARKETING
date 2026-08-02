@@ -27,13 +27,23 @@ webhookRouter.post('/stripe', async (req: Request, res: Response) => {
         const session = event.data.object as Stripe.Checkout.Session;
         const { teamId, planId } = session.metadata || {};
         if (teamId && planId) {
-          await prisma.subscription.updateMany({
-            where: { teamId, pendingPlan: planId },
-            data: {
+          await prisma.subscription.upsert({
+            where: { teamId },
+            create: {
+              teamId,
+              planId,
               tier: planId,
               status: 'active',
               stripeSubscriptionId: session.subscription as string,
-              pendingPlan: null,
+              stripeCustomerId: session.customer as string,
+              currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            },
+            update: {
+              planId,
+              tier: planId,
+              status: 'active',
+              stripeSubscriptionId: session.subscription as string,
+              stripeCustomerId: session.customer as string,
             },
           });
         }

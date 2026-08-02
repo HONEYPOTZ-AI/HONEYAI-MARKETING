@@ -390,7 +390,7 @@ model Plan {
 
 model Subscription {
   id                   String   @id @default(uuid())
-  teamId               String
+  teamId               String   @unique
   planId               String
   tier                 String
   status               String   @default("trialing")
