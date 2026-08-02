@@ -33,8 +33,8 @@ export default function PostsPage() {
 
   const fetchPosts = async () => {
     try {
-      const res = await api.get('/posts');
-      setPosts(res.data.data);
+      const res = await api.get<{ success: boolean; data: any[] }>('/posts');
+      setPosts(res.data);
     } catch { setLoading(false); }
     setLoading(false);
   };
@@ -57,8 +57,8 @@ export default function PostsPage() {
     if (!aiTopic.trim()) return;
     setAiGenerating(true);
     try {
-      const res = await api.post('/posts/generate', { topic: aiTopic.trim(), platform, tone: aiTone, length: 'medium' });
-      setContent(res.data.data.content);
+      const res = await api.post<{ success: boolean; data: { content: string } }>('/posts/generate', { topic: aiTopic.trim(), platform, tone: aiTone, length: 'medium' });
+      setContent(res.data.content);
       setAiTopic('');
     } catch {} finally { setAiGenerating(false); }
   };

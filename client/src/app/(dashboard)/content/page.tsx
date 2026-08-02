@@ -29,7 +29,7 @@ export default function ContentPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await api.post('/content/generate', {
+      const res = await api.post<{ success: boolean; data: any }>('/content/generate', {
         topic: topic.trim(),
         type,
         tone,
@@ -37,7 +37,7 @@ export default function ContentPage() {
         keywords: keywords.split(',').map(k => k.trim()).filter(Boolean),
         targetAudience: targetAudience.trim() || undefined,
       });
-      setGenerated(res.data.data);
+      setGenerated(res.data);
     } catch (e: any) {
       setError(e.response?.data?.error || 'Generation failed');
     } finally {

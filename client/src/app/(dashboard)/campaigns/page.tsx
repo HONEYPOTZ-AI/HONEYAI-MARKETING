@@ -27,8 +27,8 @@ export default function CampaignsPage() {
 
   const fetchCampaigns = async () => {
     try {
-      const res = await api.get('/campaigns');
-      setCampaigns(res.data.data);
+      const res = await api.get<{ success: boolean; data: any[] }>('/campaigns');
+      setCampaigns(res.data);
     } catch {} finally { setLoading(false); }
   };
 

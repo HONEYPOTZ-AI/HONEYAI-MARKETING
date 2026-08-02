@@ -50,6 +50,8 @@ export default function BillingPage() {
       window.location.href = res.data.url;
     } catch (err: any) { alert(err.message); setPortalLoading(false); }
   };
+
+  if (loading) {
     return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   }
 
@@ -62,7 +64,7 @@ export default function BillingPage() {
         <h1 className="text-3xl font-bold">Billing</h1>
         <p className="text-muted-foreground mt-1">
           {subscription
-            ? `Current plan: ${currentTier?.charAt(0).toUpperCase() + currentTier?.slice(1)} — ${subscription.status === 'trialing' ? 'Trial ends ' + new Date(subscription.trialEndsAt!).toLocaleDateString() : 'Active until ' + new Date(subscription.currentPeriodEnd).toLocaleDateString()}`
+            ? `Current plan: ${(currentTier ?? 'free').charAt(0).toUpperCase() + (currentTier ?? 'free').slice(1)} — ${subscription.status === 'trialing' ? 'Trial ends ' + new Date(subscription.trialEndsAt!).toLocaleDateString() : 'Active until ' + new Date(subscription.currentPeriodEnd).toLocaleDateString()}`
             : 'Choose a plan to get started'}
         </p>
         {subscription && (

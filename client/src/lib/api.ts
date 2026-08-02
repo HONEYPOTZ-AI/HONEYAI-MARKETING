@@ -45,12 +45,12 @@ export const api: {
   get: <T = unknown>(endpoint: string) => Promise<T>;
   post: <T = unknown>(endpoint: string, body: unknown) => Promise<T>;
   patch: <T = unknown>(endpoint: string, body: unknown) => Promise<T>;
-  del: <T = unknown>(endpoint: string) => Promise<T>;
+  delete: <T = unknown>(endpoint: string) => Promise<T>;
 } = Object.assign(_fetch, {
   get: <T = unknown>(endpoint: string) => _fetch<T>(endpoint),
   post: <T = unknown>(endpoint: string, body: unknown) => _fetch<T>(endpoint, { method: 'POST', body }),
   patch: <T = unknown>(endpoint: string, body: unknown) => _fetch<T>(endpoint, { method: 'PATCH', body }),
-  del: <T = unknown>(endpoint: string) => _fetch<T>(endpoint, { method: 'DELETE' }),
+  delete: <T = unknown>(endpoint: string) => _fetch<T>(endpoint, { method: 'DELETE' }),
 });
 
 // Auth
@@ -64,6 +64,11 @@ export async function register(email: string, password: string, fullName: string
 
 export async function requestMagicLink(email: string) {
   return api('/api/auth/magic-link', { method: 'POST', body: { email } });
+}
+
+// Dashboard
+export async function getDashboardMetrics() {
+  return api('/api/analytics/dashboard');
 }
 
 // Posts
