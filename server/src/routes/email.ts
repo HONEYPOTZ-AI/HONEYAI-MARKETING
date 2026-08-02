@@ -67,11 +67,8 @@ emailRouter.post('/send', async (req: AuthRequest, res: Response) => {
     await prisma.emailSendResult.create({
       data: {
         templateId: data.templateId || '',
-        campaignId: data.campaignId,
-        contactId: data.contactId,
-        toEmail: data.to,
-        subject: data.subject,
-        messageId: result.messageId,
+        campaignId: data.campaignId || "",
+        recipientId: data.to,
         status: 'sent',
         sentAt: new Date(),
         userId: req.userId!,
