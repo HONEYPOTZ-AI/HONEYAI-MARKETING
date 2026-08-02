@@ -14,7 +14,7 @@ export interface EmailOptions {
   html: string;
   text?: string;
   from?: string;
-  trackingSettings?: { openTracking?: boolean; clickTracking?: boolean };
+  trackingSettings?: any;
 }
 
 export async function sendEmail(opts: EmailOptions): Promise<{ messageId: string; status: string }> {

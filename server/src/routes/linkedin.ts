@@ -47,7 +47,7 @@ linkedinRouter.get('/callback', async (req: Request, res: Response) => {
       return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/settings?linkedin=error&reason=token_exchange`);
     }
 
-    const tokens = await tokenRes.json();
+    const tokens: any = await tokenRes.json();
 
     // Get user profile from OpenID Connect
     const profileRes = await fetch('https://api.linkedin.com/v2/userinfo', {
@@ -55,7 +55,7 @@ linkedinRouter.get('/callback', async (req: Request, res: Response) => {
     });
 
     if (profileRes.ok) {
-      const profile = await profileRes.json();
+      const profile: any = await profileRes.json();
 
       // Store connection in DB if we have a team context
       if (state) {

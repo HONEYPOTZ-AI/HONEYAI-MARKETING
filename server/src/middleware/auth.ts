@@ -8,6 +8,7 @@ export interface AuthRequest extends Request {
   userId?: string;
   teamId?: string;
   userRole?: string;
+  userEmail?: string;
 }
 
 export async function authenticate(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {

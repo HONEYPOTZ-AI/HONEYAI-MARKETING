@@ -53,7 +53,7 @@ export async function generateText(opts: GenerateOptions): Promise<{ text: strin
     throw new Error(`AI service unavailable: ${response.status}`);
   }
 
-  const data = await response.json();
+  const data: any = await response.json();
   if (data.error) {
     console.error('OpenAI API error:', JSON.stringify(data.error));
     throw new Error('AI service error');

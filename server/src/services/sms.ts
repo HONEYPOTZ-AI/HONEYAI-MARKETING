@@ -30,7 +30,7 @@ export async function lookupPhoneNumber(phone: string): Promise<{ valid: boolean
   }
 
   const lookup = await client.lookups.v2.phoneNumbers(phone).fetch();
-  return { valid: lookup.valid || false, carrier: lookup.carrier?.name || 'unknown' };
+  return { valid: lookup.valid || false, carrier: (lookup as any).carrier?.name || 'unknown' };
 }
 
 export function isConfigured(): boolean {
