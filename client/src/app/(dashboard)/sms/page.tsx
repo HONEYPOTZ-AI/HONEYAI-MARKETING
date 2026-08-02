@@ -1,0 +1,1 @@
+export default function SmsPage() { return <div className="space-y-6"><h1 className="text-3xl font-bold">SMS</h1><p className="text-muted-foreground">Manage SMS campaigns, incentives, and opt-ins.</p></div>; }

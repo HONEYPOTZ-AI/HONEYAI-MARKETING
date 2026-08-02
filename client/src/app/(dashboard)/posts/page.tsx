@@ -1,0 +1,1 @@
+export default function PostsPage() { return <div className="space-y-6"><h1 className="text-3xl font-bold">Posts</h1><p className="text-muted-foreground">Schedule and publish LinkedIn posts.</p></div>; }

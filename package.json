@@ -1,0 +1,31 @@
+{
+  "name": "honeyai-marketing",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Honey AI Marketing — All-in-one SaaS for LinkedIn automation, email/SMS campaigns, content generation, and multi-platform publishing",
+  "workspaces": ["client", "server", "shared"],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:client": "cd client && npm run dev",
+    "dev:server": "cd server && npm run dev",
+    "build": "npm run build:shared && npm run build:server && npm run build:client",
+    "build:shared": "cd shared && npx tsc",
+    "build:client": "cd client && npm run build",
+    "build:server": "cd server && npm run build",
+    "start": "cd server && npm start",
+    "lint": "eslint . --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "cd server && npx prisma migrate deploy",
+    "db:push": "cd server && npx prisma db push",
+    "db:seed": "cd server && npx prisma db seed",
+    "db:studio": "cd server && npx prisma studio",
+    "docker:build": "docker build -t honeyai-marketing .",
+    "docker:run": "docker run -p 3000:3000 -p 3001:3001 honeyai-marketing"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "typescript": "^5.3.3",
+    "eslint": "^8.56.0",
+    "@types/node": "^20.10.0"
+  }
+}

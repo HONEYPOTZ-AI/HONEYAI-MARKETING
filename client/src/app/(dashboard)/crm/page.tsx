@@ -1,0 +1,1 @@
+export default function CrmPage() { return <div className="space-y-6"><h1 className="text-3xl font-bold">CRM</h1><p className="text-muted-foreground">Manage contacts, deals, and pipeline.</p></div>; }

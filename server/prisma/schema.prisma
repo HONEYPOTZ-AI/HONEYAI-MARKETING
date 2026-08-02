@@ -1,0 +1,406 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Users & Teams ────────────────────────────────────────────────────────
+
+model User {
+  id             String    @id @default(uuid())
+  email          String    @unique
+  passwordHash   String?
+  fullName       String
+  avatarUrl      String?
+  role           String    @default("marketer") // admin, manager, marketer, viewer
+  teamId         String?
+  isEmailVerified Boolean  @default(false)
+  isMfaEnabled   Boolean   @default(false)
+  mfaSecret      String?
+  refreshToken   String?
+  lastLoginAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  team           Team?     @relation(fields: [teamId], references: [id])
+  posts          ScheduledPost[]
+  campaigns      Campaign[]     @relation("CampaignCreator")
+  emailResults   EmailSendResult[]
+
+  @@index([email])
+  @@index([teamId])
+}
+
+model Team {
+  id          String   @id @default(uuid())
+  name        String
+  ownerId     String
+  planId      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner       User     @relation(fields: [ownerId], references: [id])
+  members     User[]
+  campaigns   Campaign[]
+  posts       ScheduledPost[]
+  contacts    Contact[]
+  deals       Deal[]
+  templates   EmailTemplate[]
+  sequences   EmailSequence[]
+  channels    PublishingChannel[]
+  content     GeneratedContent[]
+  subscriptions Subscription[]
+
+  @@index([ownerId])
+}
+
+// ── Authentication ───────────────────────────────────────────────────────
+
+model MagicLink {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  redirectTo String?
+  used      Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([email])
+}
+
+model OAuthConnection {
+  id          String   @id @default(uuid())
+  userId      String
+  provider    String   // google, linkedin
+  providerId  String
+  accessToken String
+  refreshToken String?
+  tokenExpiry DateTime?
+  scope       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([provider, providerId])
+  @@index([userId])
+}
+
+// ── Campaigns ────────────────────────────────────────────────────────────
+
+model Campaign {
+  id             String   @id @default(uuid())
+  teamId         String
+  name           String
+  type           String   // email, sms, linkedin, multi
+  status         String   @default("draft")
+  channelConfig  Json?
+  targetCount    Int      @default(0)
+  sentCount      Int      @default(0)
+  deliveredCount Int      @default(0)
+  openRate       Float?
+  clickRate      Float?
+  replyRate      Float?
+  scheduledAt    DateTime?
+  completedAt    DateTime?
+  createdBy      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  team           Team     @relation(fields: [teamId], references: [id])
+  creator        User     @relation("CampaignCreator", fields: [createdBy], references: [id])
+  emailResults   EmailSendResult[]
+  smsCampaigns   SmsCampaign[]
+
+  @@index([teamId])
+  @@index([status])
+}
+
+// ── Scheduled Posts ─────────────────────────────────────────────────────
+
+model ScheduledPost {
+  id              String    @id @default(uuid())
+  teamId          String
+  userId          String
+  content         String
+  platform        String    // linkedin, twitter, etc.
+  status          String    @default("draft")
+  scheduledFor    DateTime?
+  publishedAt     DateTime?
+  platformPostId  String?
+  platformPostUrl String?
+  imageUrl        String?
+  tags            Json      @default("[]")
+  impressions     Int       @default(0)
+  clicks          Int       @default(0)
+  likes           Int       @default(0)
+  shares          Int       @default(0)
+  comments        Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  team            Team      @relation(fields: [teamId], references: [id])
+  user            User      @relation(fields: [userId], references: [id])
+
+  @@index([teamId])
+  @@index([status, scheduledFor])
+}
+
+// ── Email ────────────────────────────────────────────────────────────────
+
+model EmailTemplate {
+  id        String   @id @default(uuid())
+  teamId    String
+  name      String
+  subject   String
+  body      String
+  type      String   // welcome, nurture, promo, followup, transactional, custom
+  variables Json     @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  team      Team     @relation(fields: [teamId], references: [id])
+
+  @@index([teamId])
+}
+
+model EmailSequence {
+  id        String   @id @default(uuid())
+  teamId    String
+  name      String
+  steps     Json     @default("[]")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  team      Team     @relation(fields: [teamId], references: [id])
+
+  @@index([teamId])
+}
+
+model EmailSendResult {
+  id          String    @id @default(uuid())
+  campaignId  String
+  userId      String
+  recipientId String
+  status      String    @default("queued")
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  openedAt    DateTime?
+  clickedAt   DateTime?
+  error       String?
+
+  campaign    Campaign  @relation(fields: [campaignId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@index([campaignId])
+  @@index([status])
+}
+
+// ── SMS ──────────────────────────────────────────────────────────────────
+
+model SmsOptIn {
+  id            String    @id @default(uuid())
+  contactId     String
+  phoneNumber   String
+  source        String    @default("manual")
+  incentiveCode String?
+  isActive      Boolean   @default(true)
+  optedInAt     DateTime  @default(now())
+  optedOutAt    DateTime?
+
+  contact       Contact   @relation(fields: [contactId], references: [id])
+
+  @@index([contactId])
+  @@index([phoneNumber])
+}
+
+model SmsCampaign {
+  id              String   @id @default(uuid())
+  campaignId      String
+  message         String
+  recipientCount  Int      @default(0)
+  sentCount       Int      @default(0)
+  deliveredCount  Int      @default(0)
+  responseCount   Int      @default(0)
+  scheduledAt     DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime @default(now())
+
+  campaign        Campaign @relation(fields: [campaignId], references: [id])
+
+  @@index([campaignId])
+}
+
+model SmsIncentive {
+  id                String  @id @default(uuid())
+  code              String  @unique
+  description       String
+  discountType      String  // fixed, percent
+  discountValue     Float
+  isActive          Boolean @default(true)
+  maxRedemptions    Int     @default(100)
+  currentRedemptions Int    @default(0)
+  createdAt         DateTime @default(now())
+}
+
+// ── CRM ──────────────────────────────────────────────────────────────────
+
+model Contact {
+  id              String    @id @default(uuid())
+  teamId          String
+  fullName        String
+  firstName       String    @default("")
+  lastName        String    @default("")
+  email           String?
+  phone           String?
+  companyName     String?
+  position        String?
+  industry        String?
+  location        String?
+  linkedinUrl     String?
+  avatarUrl       String?
+  tags            Json      @default("[]")
+  stage           String    @default("lead")
+  score           Int       @default(0)
+  lastContactedAt DateTime?
+  smsOptIn        Boolean   @default(false)
+  smsOptInAt      DateTime?
+  smsOptInSource  String?
+  hubspotContactId String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  team            Team      @relation(fields: [teamId], references: [id])
+  deals           Deal[]
+  activities      Activity[]
+  smsOptIns       SmsOptIn[]
+
+  @@index([teamId])
+  @@index([email])
+  @@index([stage])
+}
+
+model Deal {
+  id              String   @id @default(uuid())
+  teamId          String
+  contactId       String
+  name            String
+  value           Float    @default(0)
+  currency        String   @default("USD")
+  stage           String   @default("lead")
+  probability     Int      @default(0)
+  expectedCloseDate DateTime?
+  closedAt        DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  team            Team     @relation(fields: [teamId], references: [id])
+  contact         Contact  @relation(fields: [contactId], references: [id])
+
+  @@index([teamId])
+  @@index([stage])
+}
+
+model Activity {
+  id          String   @id @default(uuid())
+  teamId      String
+  contactId   String
+  type        String   // email, call, meeting, note, sms, linkedin
+  description String
+  performedBy String
+  performedAt DateTime @default(now())
+
+  contact     Contact  @relation(fields: [contactId], references: [id])
+
+  @@index([teamId])
+  @@index([contactId])
+}
+
+// ── Content Generation ──────────────────────────────────────────────────
+
+model GeneratedContent {
+  id          String   @id @default(uuid())
+  teamId      String
+  title       String
+  body        String
+  type        String   // blog, social, email, landing, ad
+  tone        String   @default("professional")
+  topic       String
+  keywords    Json     @default("[]")
+  seoScore    Float?
+  model       String   @default("gpt-4")
+  tokensUsed  Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  team        Team     @relation(fields: [teamId], references: [id])
+
+  @@index([teamId])
+}
+
+// ── Publishing ──────────────────────────────────────────────────────────
+
+model PublishingChannel {
+  id          String    @id @default(uuid())
+  teamId      String
+  platform    String    // linkedin, telegraph, rentry, etc.
+  name        String
+  isConnected Boolean   @default(false)
+  credentials Json?
+  dailyLimit  Int       @default(10)
+  dailyUsed   Int       @default(0)
+  lastPostedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  team        Team      @relation(fields: [teamId], references: [id])
+
+  @@unique([teamId, platform])
+}
+
+model PublishedArticle {
+  id            String   @id @default(uuid())
+  contentId     String
+  platform      String
+  url           String
+  title         String
+  publishedAt   DateTime @default(now())
+  backlinkCount Int      @default(0)
+
+  @@index([contentId])
+  @@index([platform])
+}
+
+// ── Billing ──────────────────────────────────────────────────────────────
+
+model Plan {
+  id            String  @id @default(uuid())
+  name          String
+  tier          String  // starter, pro, enterprise
+  pricePerMonth Float
+  pricePerYear  Float
+  currency      String  @default("USD")
+  features      Json    @default("[]")
+  limits        Json
+  isActive      Boolean @default(true)
+  createdAt     DateTime @default(now())
+}
+
+model Subscription {
+  id                   String   @id @default(uuid())
+  teamId               String
+  planId               String
+  tier                 String
+  status               String   @default("trialing")
+  currentPeriodStart   DateTime @default(now())
+  currentPeriodEnd     DateTime
+  trialEndsAt          DateTime?
+  stripeSubscriptionId String?
+  stripeCustomerId     String?
+
+  team                 Team     @relation(fields: [teamId], references: [id])
+
+  @@index([teamId])
+  @@index([stripeCustomerId])
+}
