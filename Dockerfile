@@ -1,6 +1,8 @@
 # ── Build Stage ────────────────────────────────────────────────────────────
 FROM node:20-alpine AS builder
 
+RUN apk add --no-cache openssl
+
 WORKDIR /app
 COPY package*.json ./
 COPY shared/ ./shared/
@@ -10,7 +12,7 @@ COPY client/ ./client/
 # Install all workspace deps (this hoists everything to root node_modules)
 RUN npm ci
 
-# Generate Prisma client (before build, so build can use generated types)
+# Generate Prisma client
 WORKDIR /app/server
 RUN npx prisma generate
 
@@ -28,7 +30,7 @@ RUN apk add --no-cache openssl
 
 WORKDIR /app
 
-# Copy root node_modules (all workspace deps hoisted here, including generated prisma client)
+# Copy root node_modules (all workspace deps hoisted here)
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
 
