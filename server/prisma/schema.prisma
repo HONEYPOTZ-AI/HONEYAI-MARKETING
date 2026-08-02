@@ -26,6 +26,7 @@ model User {
   updatedAt      DateTime  @updatedAt
 
   team           Team?     @relation("TeamMembers", fields: [teamId], references: [id])
+  ownedTeam      Team?     @relation("TeamOwner")
   posts          ScheduledPost[]
   campaigns      Campaign[]     @relation("CampaignCreator")
   emailResults   EmailSendResult[]
@@ -42,7 +43,7 @@ model Team {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  owner       User     @relation(fields: [ownerId], references: [id])
+  owner       User     @relation("TeamOwner", fields: [ownerId], references: [id])
   members     User[]             @relation("TeamMembers")
   campaigns   Campaign[]
   posts       ScheduledPost[]
