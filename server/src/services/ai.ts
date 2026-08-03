@@ -11,7 +11,10 @@ interface GenerateOptions {
 }
 
 function buildAuthHeaders() {
-  return { Authorization: `Bearer ${OPENAI_API_KEY}`, 'Content-Type': 'application/json' };
+  return {
+    Authorization: `Bearer ${OPENAI_API_KEY}`,
+    'Content-Type': 'application/json',
+  };
 }
 
 function extractResponseText(data: any): string {
