@@ -12,9 +12,9 @@ const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 const stripe = new Stripe(STRIPE_SECRET, { apiVersion: '2025-06-30.acacia' as any });
 
 const PLAN_PRICES: Record<string, { month: string; year: string }> = {
-  starter: { month: 'price_starter_monthly', year: 'price_starter_yearly' },
-  pro: { month: 'price_pro_monthly', year: 'price_pro_yearly' },
-  enterprise: { month: 'price_enterprise_monthly', year: 'price_enterprise_yearly' },
+  starter: { month: 'price_1U0IDCGedT6ZKtg4mvrK00lx', year: 'price_1U0IDDGedT6ZKtg4Bk65FGVQ' },
+  pro: { month: 'price_1U0IDPGedT6ZKtg47hDATEwD', year: 'price_1U0IDQGedT6ZKtg4zz826Bjf' },
+  enterprise: { month: 'price_1U0IDQGedT6ZKtg4Djm2cUuO', year: 'price_1U0IDRGedT6ZKtg4XvGNBEv9' },
 };
 
 billingRouter.get('/subscription', async (req: AuthRequest, res: Response) => {
