@@ -5,7 +5,7 @@ import compression from 'compression';
 import morgan from 'morgan';
 import { rateLimit } from 'express-rate-limit';
 import dotenv from 'dotenv';
-import { createServer } from 'http';
+
 import next from 'next';
 import path from 'path';
 
@@ -96,8 +96,8 @@ app.use(errorHandler);
 
 // ── Start Server ──────────────────────────────────────────────────────────
 nextApp.prepare().then(() => {
-  const server = createServer(app);
-  server.listen(PORT, () => {
+  
+  app.listen(PORT, () => {
     console.log(`🜁 Honey AI Marketing running on port ${PORT}`);
     console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`   Next.js client dir: ${clientDir}`);
