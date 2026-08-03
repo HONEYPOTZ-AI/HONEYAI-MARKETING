@@ -407,11 +407,10 @@ model Subscription {
   trialEndsAt          DateTime?
   stripeSubscriptionId String?
   stripeCustomerId     String?
-  createdAt   DateTime @default(now())
-
   team                 Team     @relation(fields: [teamId], references: [id])
+
+  createdAt            DateTime @default(now())
 
   @@index([teamId])
   @@index([stripeCustomerId])
-  createdAt   DateTime @default(now())
 }
